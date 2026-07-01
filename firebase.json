@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "y00-chat",
     "public": "dist",
     "ignore": [
       "firebase.json",
