@@ -1,5 +1,5 @@
 // src/components/ChatArea.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { doc, onSnapshot, updateDoc, arrayUnion } from 'firebase/firestore';
 
@@ -27,6 +27,7 @@ interface FriendshipDoc {
 export default function ChatArea({ currentUserId, activeChatId }: ChatAreaProps) {
   const [friendship, setFriendship] = useState<FriendshipDoc | null>(null);
   const [text, setText] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Lyssna på den aktiva chatten/vänskapen
   useEffect(() => {
@@ -52,6 +53,10 @@ export default function ChatArea({ currentUserId, activeChatId }: ChatAreaProps)
 
     return () => unsubscribe();
   }, [activeChatId, currentUserId]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [friendship?.messages?.length, activeChatId]);
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,8 +93,8 @@ export default function ChatArea({ currentUserId, activeChatId }: ChatAreaProps)
   const messages = friendship.messages || [];
 
   return (
-    <section className="chat-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff' }}>
-      <div className="messages" style={{ flex: 1, padding: '20px', overflowY: 'auto', background: '#efeae2' }}>
+    <section className="chat-area" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: '#fff', overflow: 'hidden' }}>
+      <div className="chat-messages" style={{ flex: 1, minHeight: 0, padding: '20px', overflowY: 'auto', background: '#efeae2' }}>
         {messages.map((m: Message, index: number) => {
           const isMe = m.senderId === currentUserId;
           return (
@@ -110,18 +115,20 @@ export default function ChatArea({ currentUserId, activeChatId }: ChatAreaProps)
             </div>
           );
         })}
+        <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={sendMessage} style={{ padding: '15px', display: 'flex', gap: '10px', borderTop: '1px solid #ccc' }}>
+      <form className="chat-input-container" onSubmit={sendMessage} style={{ flexShrink: 0, padding: '15px', display: 'flex', gap: '10px', borderTop: '1px solid #ccc', background: '#f0f2f5', paddingBottom: 'calc(15px + env(safe-area-inset-bottom))' }}>
         <input 
+          className="chat-input"
           type="text" 
           placeholder="Skriv ett meddelande..." 
           value={text} 
           onChange={e => setText(e.target.value)} 
           maxLength={500}
-          style={{ flex: 1, padding: '10px' }}
+          style={{ flex: 1, minWidth: 0, padding: '10px' }}
         />
-        <button type="submit">Skicka</button>
+        <button className="send-button" type="submit">Skicka</button>
       </form>
     </section>
   );

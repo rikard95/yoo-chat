@@ -14,6 +14,7 @@ import {
 interface SidebarProps {
   currentUserId: string;
   onSelectChat: (id: string) => void;
+  activeChatId: string | null;
   isSidebarOpen: boolean;
 }
 
@@ -39,6 +40,7 @@ interface Friendship {
 export default function Sidebar({
   currentUserId,
   onSelectChat,
+  activeChatId,
   isSidebarOpen
 }: SidebarProps) {
 
@@ -126,6 +128,20 @@ export default function Sidebar({
   const handleChatSelect = async(f:Friendship)=>{
 
     onSelectChat(f.id);
+
+    setFriendships(prev =>
+      prev.map(item =>
+        item.id === f.id
+          ? {
+              ...item,
+              lastRead: {
+                ...(item.lastRead || {}),
+                [currentUserId]: item.messages?.length || 0
+              }
+            }
+          : item
+      )
+    );
 
 
     await updateDoc(
@@ -300,9 +316,12 @@ f.requestedBy===currentUserId;
 
 
 const unread =
-(f.messages?.length || 0)
--
-(f.lastRead?.[currentUserId] || 0);
+Math.max(
+  0,
+  (f.messages || []).length - (f.lastRead?.[currentUserId] || 0)
+);
+
+const isActiveChat = activeChatId === f.id;
 
 
 
@@ -356,14 +375,17 @@ onClick={()=>handleChatSelect(f)}
 >
 
 
-<span>
+<span className="sidebar-friend-status">
 
 {f.friendStatus==="online"
 ?"🟢"
 :"⚪"
 }
 
-{" "}
+</span>
+
+
+<span className="sidebar-friend-info">
 
 <strong>
 {f.friendUsername || "Laddar"}
@@ -374,9 +396,9 @@ onClick={()=>handleChatSelect(f)}
 
 
 {
-unread>0 &&
+!isActiveChat && unread>0 &&
 
-<span className="unread-badge">
+<span className="unread-badge" title={`${unread} olästa meddelanden`}>
 
 {unread}
 

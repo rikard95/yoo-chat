@@ -63,7 +63,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', background: '#111b21', color: '#fff' }}>
+      <header className="app-header">
         
         {/* MOBILKNAPP: Togglar statet direkt */}
         <button 
@@ -73,11 +73,11 @@ function App() {
           {isSidebarOpen ? '✕ Stäng' : '☰ Kontakter'}
         </button>
 
-        <h2 className="header-title" style={{ margin: '0 auto 0 15px' }}>Yoo Chat</h2>
+        <h2 className="header-title">Yoo Chat</h2>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <span className="user-info-text" style={{ fontSize: '14px', color: '#ccc' }}>
-            Inloggad som: <strong style={{ color: '#fff' }}>{profile ? profile.username : 'Laddar...'}</strong>
+        <div className="header-account">
+          <span className="account-chip user-info-text">
+            Inloggad som: <strong>{profile ? profile.username : 'Laddar...'}</strong>
           </span>
           <button className="logout-button" onClick={handleLogout}>
             Logga ut
@@ -85,7 +85,7 @@ function App() {
         </div>
       </header>
       
-      <main className="main-content">
+      <main className={`main-content ${isSidebarOpen ? 'sidebar-open' : ''} ${activeChatId ? 'chat-active' : ''}`}>
         {/* Vi skickar med isSidebarOpen direkt som en prop till din existerande sidebar */}
         <Sidebar 
           currentUserId={user.uid} 
@@ -93,6 +93,7 @@ function App() {
             setActiveChatId(id);
             setSidebarOpen(false); // Stänger menyn automatiskt när man väljer en kontakt på mobilen
           }} 
+          activeChatId={activeChatId}
           isSidebarOpen={isSidebarOpen}
         />
 
@@ -104,7 +105,7 @@ function App() {
         <ChatArea currentUserId={user.uid} activeChatId={activeChatId} />
       </main>
       
-      <footer style={{ textAlign: 'center', padding: '10px', color: '#fff', background: '#000000' }}>© 2026 Yoo Inc.</footer>
+      <footer>© 2026 Yoo Inc.</footer>
     </div>
   );
 }
