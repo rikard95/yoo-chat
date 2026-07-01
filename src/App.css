@@ -328,6 +328,9 @@ footer {
      CHAT LOGIK (BEHÅLLER DIN IDÉ)
   ========================= */
 
+  @media (max-width: 768px) {
+
+  /* chatten ska ALLTID finnas */
   .chat-area {
     position: absolute;
     top: 0;
@@ -336,13 +339,23 @@ footer {
     height: 100%;
 
     z-index: 2;
-    display: none; /* din gamla logik behålls */
+    display: flex; /* <-- VIKTIG FIX */
+    flex-direction: column;
   }
 
-  .main-content.chat-active .chat-area {
-    display: flex !important;
+  /* MEN: dölj bara innehållet när sidebar är aktivt läge (valfritt) */
+  .main-content.sidebar-open .chat-area {
+    filter: brightness(0.6);
   }
 
+  /* input måste alltid ligga ovanför */
+  .chat-input-container {
+    position: sticky;
+    bottom: 0;
+    background-color: #f0f2f5;
+    z-index: 5;
+  }
+}
   /* =========================
      UI FIX (ingen designändring)
   ========================= */
