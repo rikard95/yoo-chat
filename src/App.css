@@ -331,6 +331,9 @@ footer {
   @media (max-width: 768px) {
 
   /* chatten ska ALLTID finnas */
+  @media (max-width: 768px) {
+
+  /* chatten ska ALLTID finnas */
   .chat-area {
     position: absolute;
     top: 0;
