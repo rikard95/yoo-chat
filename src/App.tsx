@@ -20,6 +20,7 @@ function App() {
   const [profile, setProfile] = useState<UserProfile | null>(null); // Håller koll på Firestore-datan (användarnamnet)
   const [loading, setLoading] = useState(true);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     // Lyssnar på om användaren loggar in eller ut
