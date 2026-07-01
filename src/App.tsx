@@ -72,9 +72,8 @@ function App() {
           <span style={{ fontSize: '14px', color: '#ccc' }}>
             Inloggad som: <strong style={{ color: '#fff' }}>{profile ? profile.username : 'Laddar...'}</strong>
           </span>
-          <button 
+          <button className="logout-button"
             onClick={handleLogout} 
-            style={{ background: 'red', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
           >
             Logga ut
           </button>

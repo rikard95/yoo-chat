@@ -17,23 +17,20 @@ export default function Auth() {
 
     try {
       if (isRegister) {
-        // 1. Skapa användare i Firebase Authentication
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // 2. Spara användarnamn i Firestore kopplat till användarens unika UID
         await setDoc(doc(db, "users", user.uid), {
           uid: user.uid,
-          username: username.toLowerCase(), // Sparar som små bokstäver för enklare sökning
+          username: username.toLowerCase().trim(),
           email: email
         });
       } else {
-        // Logga in
         await signInWithEmailAndPassword(auth, email, password);
       }
     } catch (err: unknown) {
-      // Check if the error object has a message property safely
       if (err instanceof Error) {
+        // Renoverar lite fula Firebase-meddelanden om du vill, annars visar vi felet
         setError(err.message);
       } else {
         setError('Ett oväntat fel inträffade.');
@@ -42,38 +39,57 @@ export default function Auth() {
   };
 
   return (
-    <div className="auth-container" style={{ padding: '40px', maxWidth: '400px', margin: 'auto' }}>
-      <h2>{isRegister ? 'Skapa konto' : 'Logga in'}</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {isRegister && (
+    <div className="auth-wrapper">
+      <div className="auth-card">
+        <h1 className="auth-logo">yoo</h1>
+        <p className="auth-subtitle">
+          {isRegister ? 'Skapa ett konto för att börja chatta' : 'Logga in på ditt konto'}
+        </p>
+
+        {error && <div className="auth-error">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          {isRegister && (
+            <input 
+              className="auth-input"
+              type="text" 
+              placeholder="Användarnamn" 
+              value={username} 
+              onChange={(e) => setUsername(e.target.value)} 
+              required 
+            />
+          )}
           <input 
-            type="text" 
-            placeholder="Användarnamn" 
-            value={username} 
-            onChange={(e) => setUsername(e.target.value)} 
+            className="auth-input"
+            type="email" 
+            placeholder="E-postadress" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
             required 
           />
-        )}
-        <input 
-          type="email" 
-          placeholder="Email" 
-          value={email} 
-          onChange={(e) => setEmail(e.target.value)} 
-          required 
-        />
-        <input 
-          type="password" 
-          placeholder="Lösenord" 
-          value={password} 
-          onChange={(e) => setPassword(e.target.value)} 
-          required 
-        />
-        <button type="submit">{isRegister ? 'Registrera' : 'Logga in'}</button>
-      </form>
-      <button onClick={() => setIsRegister(!isRegister)} style={{ marginTop: '10px', background: 'none', border: 'none', color: 'blue', cursor: 'pointer' }}>
-        {isRegister ? 'Har du redan ett konto? Logga in' : 'Inget konto? Skapa ett här'}
-      </button>
+          <input 
+            className="auth-input"
+            type="password" 
+            placeholder="Lösenord" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+            required 
+          />
+          <button type="submit" className="auth-submit-btn">
+            {isRegister ? 'Registrera dig' : 'Logga in'}
+          </button>
+        </form>
+
+        <button 
+          onClick={() => {
+            setIsRegister(!isRegister);
+            setError(''); // Nollställ felmeddelandet vid byte av läge
+          }} 
+          className="auth-switch-btn"
+        >
+          {isRegister ? 'Har du redan ett konto? Logga in' : 'Inget konto? Skapa ett här'}
+        </button>
+      </div>
     </div>
   );
 }
