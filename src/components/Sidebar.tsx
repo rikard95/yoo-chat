@@ -12,7 +12,7 @@ interface UserProfile {
   uid: string;
   username: string;
   email: string;
-  status?: 'online' | 'offline'; // Lagt till status här
+  status?: 'online' | 'offline';
 }
 
 interface Friendship {
@@ -20,10 +20,10 @@ interface Friendship {
   userIds: string[];
   status: 'pending' | 'accepted';
   requestedBy: string;
-  messages?: any[]; 
+  messages?: { senderId: string; text: string; createdAt?: number }[];
   lastRead?: Record<string, number>;
   friendUsername?: string;
-  friendStatus?: 'online' | 'offline'; // Lagt till för att visa i sidebaren
+  friendStatus?: 'online' | 'offline';
 }
 
 export default function Sidebar({ currentUserId, onSelectChat }: SidebarProps) {
@@ -77,57 +77,61 @@ export default function Sidebar({ currentUserId, onSelectChat }: SidebarProps) {
     });
   };
 
-  // NYTT: Lyssnar på både chattar OCH vännernas onlinestatus i realtid!
+  // STÄDAD OCH SÄKER EFFECT
   useEffect(() => {
     const q = query(collection(db, "friendships"), where("userIds", "array-contains", currentUserId));
     
+    // Array för att hålla reda på alla aktiva användarlyssnare globalt i effekten
+    let activeUserUnsubscribes: (() => void)[] = [];
+
     const unsubscribeFriendships = onSnapshot(q, (snapshot) => {
+      // 1. Rensa ALLA gamla användarlyssnare direkt när grundlistan förändras
+      activeUserUnsubscribes.forEach(unsub => unsub());
+      activeUserUnsubscribes = [];
+
       const baseList = snapshot.docs.map(doc => ({ 
         id: doc.id, 
         ...doc.data() 
       } as Friendship));
 
-      // Skapa en lista med lyssnare för varje väns användarprofil
-      const unsubscribesUsers: (() => void)[] = [];
+      // Sätt baslistan först så vi har något att visa
+      setFriendships(baseList);
 
-      baseList.forEach((f, index) => {
+      // 2. Starta nya lyssnare för varje vän
+      baseList.forEach((f) => {
         const friendId = f.userIds.find(id => id !== currentUserId);
         if (!friendId) return;
 
         const userDocRef = doc(db, "users", friendId);
         
-        // Lyssna på just den här vännens dokument för att se om de blir online/offline
         const unsubUser = onSnapshot(userDocRef, (userSnap) => {
           if (userSnap.exists()) {
             const userData = userSnap.data() as UserProfile;
             
-            setFriendships(prev => {
-              return prev.map(item => {
-                if (item.id === f.id) {
-                  return { 
-                    ...item, 
-                    friendUsername: userData.username,
-                    friendStatus: userData.status || 'offline' // Sparar statusen live!
-                  };
-                }
-                return item;
-              });
-            });
+            setFriendships(prev => 
+              prev.map(item => 
+                item.id === f.id 
+                  ? { 
+                      ...item, 
+                      friendUsername: userData.username,
+                      friendStatus: userData.status || 'offline' 
+                    } 
+                  : item
+              )
+            );
           }
         });
-        unsubscribesUsers.push(unsubUser);
+        
+        // Spara lyssnaren så den kan stängas av vid nästa uppdatering eller unmount
+        activeUserUnsubscribes.push(unsubUser);
       });
-
-      // Initiera listan (innan användardatan hunnit rulla in)
-      setFriendships(baseList);
-
-      // Stäng av användarlyssnare om friendships ändras
-      return () => {
-        unsubscribesUsers.forEach(unsub => unsub());
-      };
     });
 
-    return () => unsubscribeFriendships();
+    // Stäng av ALLT när komponenten dör
+    return () => {
+      unsubscribeFriendships();
+      activeUserUnsubscribes.forEach(unsub => unsub());
+    };
   }, [currentUserId]);
 
   return (
@@ -151,17 +155,15 @@ export default function Sidebar({ currentUserId, onSelectChat }: SidebarProps) {
           const totalMessages = f.messages ? f.messages.length : 0;
           const readMessages = f.lastRead ? (f.lastRead[currentUserId] || 0) : 0;
           const unreadCount = totalMessages - readMessages;
-          
-          // Kolla om vännen är online
           const isOnline = f.friendStatus === 'online';
 
           if (f.status === 'pending') {
             return (
               <div key={f.id} style={{ padding: '8px', background: '#ffeebb', margin: '5px 0', borderRadius: '5px' }}>
                 {isSender ? (
-                  <p>Förfrågan skickad till: <strong>{f.friendUsername}</strong></p>
+                  <p>Förfrågan skickad till: <strong>{f.friendUsername || "Laddar..."}</strong></p>
                 ) : (
-                  <p>Förfrågan mottagen från: <strong>{f.friendUsername}</strong></p>
+                  <p>Förfrågan mottagen från: <strong>{f.friendUsername || "Laddar..."}</strong></p>
                 )}
                 {!isSender && <button onClick={() => acceptRequest(f.id)}>Acceptera</button>}
               </div>
@@ -183,16 +185,15 @@ export default function Sidebar({ currentUserId, onSelectChat }: SidebarProps) {
                 alignItems: 'center'
               }}
             >
-              {/* VISNING AV NAMN + ONLINESTATUS (GRÖN/GRÅ PRICK) */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{
                   width: '10px',
                   height: '10px',
                   borderRadius: '50%',
-                  background: isOnline ? '#4CAF50' : '#9E9E9E', // Grön om online, grå om offline
+                  background: isOnline ? '#4CAF50' : '#9E9E9E',
                   display: 'inline-block'
                 }} />
-                <span><strong>{f.friendUsername}</strong></span>
+                <span><strong>{f.friendUsername || "Laddar..."}</strong></span>
               </div>
 
               {unreadCount > 0 && (
