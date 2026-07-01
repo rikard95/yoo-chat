@@ -1,11 +1,20 @@
-// src/components/Sidebar.tsx
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, getDocs, addDoc, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  onSnapshot,
+  doc,
+  updateDoc
+} from 'firebase/firestore';
 
 interface SidebarProps {
   currentUserId: string;
   onSelectChat: (id: string) => void;
+  isSidebarOpen: boolean;
 }
 
 interface UserProfile {
@@ -26,192 +35,382 @@ interface Friendship {
   friendStatus?: 'online' | 'offline';
 }
 
-export default function Sidebar({ currentUserId, onSelectChat }: SidebarProps) {
-  const [searchName, setSearchName] = useState('');
-  const [foundUser, setFoundUser] = useState<UserProfile | null>(null);
-  const [friendships, setFriendships] = useState<Friendship[]>([]);
+
+export default function Sidebar({
+  currentUserId,
+  onSelectChat,
+  isSidebarOpen
+}: SidebarProps) {
+
+  const [searchName,setSearchName] = useState('');
+  const [foundUser,setFoundUser] = useState<UserProfile|null>(null);
+  const [friendships,setFriendships] = useState<Friendship[]>([]);
+
 
   const handleSearch = async () => {
+
     setFoundUser(null);
-    const q = query(collection(db, "users"), where("username", "==", searchName.toLowerCase().trim()));
-    const querySnapshot = await getDocs(q);
-    
-    if (!querySnapshot.empty) {
-      const docData = querySnapshot.docs[0].data() as UserProfile;
-      if (docData.uid === currentUserId) return alert("Du kan inte lägga till dig själv!");
-      setFoundUser(docData);
-    } else {
-      alert("Hittade ingen användare med det namnet.");
+
+    const q = query(
+      collection(db,"users"),
+      where("username","==",searchName.toLowerCase().trim())
+    );
+
+    const snap = await getDocs(q);
+
+    if(!snap.empty){
+
+      const data = snap.docs[0].data() as UserProfile;
+
+      if(data.uid === currentUserId){
+        return alert("Du kan inte lägga till dig själv!");
+      }
+
+      setFoundUser(data);
+
+    }else{
+      alert("Hittade ingen användare");
     }
   };
 
-  const sendRequest = async () => {
-    if (!foundUser) return;
-    
-    await addDoc(collection(db, "friendships"), {
-      userIds: [currentUserId, foundUser.uid],
-      status: "pending",
-      requestedBy: currentUserId,
-      messages: [],
-      lastRead: {
-        [currentUserId]: 0,
-        [foundUser.uid]: 0
+
+
+  const sendRequest = async()=>{
+
+    if(!foundUser)return;
+
+
+    await addDoc(collection(db,"friendships"),{
+
+      userIds:[
+        currentUserId,
+        foundUser.uid
+      ],
+
+      status:"pending",
+
+      requestedBy:currentUserId,
+
+      messages:[],
+
+      lastRead:{
+        [currentUserId]:0,
+        [foundUser.uid]:0
       }
+
     });
-    alert("Vänförfrågan skickad!");
+
+
     setFoundUser(null);
     setSearchName('');
+
+    alert("Vänförfrågan skickad");
+
   };
 
-  const acceptRequest = async (id: string) => {
-    const ref = doc(db, "friendships", id);
-    await updateDoc(ref, { status: "accepted" });
+
+
+  const acceptRequest = async(id:string)=>{
+
+    await updateDoc(
+      doc(db,"friendships",id),
+      {
+        status:"accepted"
+      }
+    );
+
   };
 
-  const handleChatSelect = async (f: Friendship) => {
+
+
+  const handleChatSelect = async(f:Friendship)=>{
+
     onSelectChat(f.id);
-    const totalMessages = f.messages ? f.messages.length : 0;
-    const ref = doc(db, "friendships", f.id);
-    await updateDoc(ref, {
-      [`lastRead.${currentUserId}`]: totalMessages
-    });
+
+
+    await updateDoc(
+      doc(db,"friendships",f.id),
+      {
+        [`lastRead.${currentUserId}`]:
+        f.messages?.length || 0
+      }
+    );
+
   };
 
-  // STÄDAD OCH SÄKER EFFECT
-  useEffect(() => {
-    const q = query(collection(db, "friendships"), where("userIds", "array-contains", currentUserId));
-    
-    // Array för att hålla reda på alla aktiva användarlyssnare globalt i effekten
-    let activeUserUnsubscribes: (() => void)[] = [];
 
-    const unsubscribeFriendships = onSnapshot(q, (snapshot) => {
-      // 1. Rensa ALLA gamla användarlyssnare direkt när grundlistan förändras
-      activeUserUnsubscribes.forEach(unsub => unsub());
-      activeUserUnsubscribes = [];
 
-      const baseList = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
+
+  useEffect(()=>{
+
+
+    const q = query(
+      collection(db,"friendships"),
+      where("userIds","array-contains",currentUserId)
+    );
+
+
+    const unsubscribe =
+    onSnapshot(q,(snapshot)=>{
+
+
+      const list =
+      snapshot.docs.map(d=>({
+        id:d.id,
+        ...d.data()
       } as Friendship));
 
-      // Sätt baslistan först så vi har något att visa
-      setFriendships(baseList);
 
-      // 2. Starta nya lyssnare för varje vän
-      baseList.forEach((f) => {
-        const friendId = f.userIds.find(id => id !== currentUserId);
-        if (!friendId) return;
+      setFriendships(list);
 
-        const userDocRef = doc(db, "users", friendId);
-        
-        const unsubUser = onSnapshot(userDocRef, (userSnap) => {
-          if (userSnap.exists()) {
-            const userData = userSnap.data() as UserProfile;
-            
-            setFriendships(prev => 
-              prev.map(item => 
-                item.id === f.id 
-                  ? { 
-                      ...item, 
-                      friendUsername: userData.username,
-                      friendStatus: userData.status || 'offline' 
-                    } 
-                  : item
-              )
-            );
+
+
+      list.forEach(f=>{
+
+
+        const friendId =
+        f.userIds.find(
+          id=>id!==currentUserId
+        );
+
+
+        if(!friendId)return;
+
+
+
+        onSnapshot(
+          doc(db,"users",friendId),
+          snap=>{
+
+            if(snap.exists()){
+
+              const user =
+              snap.data() as UserProfile;
+
+
+              setFriendships(prev=>
+
+                prev.map(item=>
+
+                  item.id===f.id
+
+                  ?{
+                    ...item,
+                    friendUsername:user.username,
+                    friendStatus:user.status || "offline"
+                  }
+
+                  :item
+
+                )
+
+              );
+
+            }
+
           }
-        });
-        
-        // Spara lyssnaren så den kan stängas av vid nästa uppdatering eller unmount
-        activeUserUnsubscribes.push(unsubUser);
+
+        );
+
       });
+
+
+
     });
 
-    // Stäng av ALLT när komponenten dör
-    return () => {
-      unsubscribeFriendships();
-      activeUserUnsubscribes.forEach(unsub => unsub());
-    };
-  }, [currentUserId]);
 
-  return (
-    <aside className="sidebar" style={{ width: '300px', background: '#f5f5f5', padding: '15px' }}>
-      <div className="search-section">
-        <input type="text" placeholder="Sök användarnamn..." value={searchName} onChange={e => setSearchName(e.target.value)} />
-        <button onClick={handleSearch}>Sök</button>
-      </div>
+    return ()=>unsubscribe();
 
-      {foundUser && (
-        <div style={{ background: '#fff', padding: '10px', marginTop: '10px', borderRadius: '5px' }}>
-          <p>Hittad: <strong>{foundUser.username}</strong></p>
-          <button onClick={sendRequest}>Lägg till vän</button>
-        </div>
-      )}
 
-      <div className="relations-section" style={{ marginTop: '20px' }}>
-        <h3>Dina relationer</h3>
-        {friendships.map((f: Friendship) => {
-          const isSender = f.requestedBy === currentUserId;
-          const totalMessages = f.messages ? f.messages.length : 0;
-          const readMessages = f.lastRead ? (f.lastRead[currentUserId] || 0) : 0;
-          const unreadCount = totalMessages - readMessages;
-          const isOnline = f.friendStatus === 'online';
+  },[currentUserId]);
 
-          if (f.status === 'pending') {
-            return (
-              <div key={f.id} style={{ padding: '8px', background: '#ffeebb', margin: '5px 0', borderRadius: '5px' }}>
-                {isSender ? (
-                  <p>Förfrågan skickad till: <strong>{f.friendUsername || "Laddar..."}</strong></p>
-                ) : (
-                  <p>Förfrågan mottagen från: <strong>{f.friendUsername || "Laddar..."}</strong></p>
-                )}
-                {!isSender && <button onClick={() => acceptRequest(f.id)}>Acceptera</button>}
-              </div>
-            );
-          }
 
-          return (
-            <div 
-              key={f.id} 
-              onClick={() => handleChatSelect(f)}
-              style={{ 
-                padding: '12px', 
-                background: '#d3ffd3', 
-                margin: '5px 0', 
-                cursor: 'pointer', 
-                borderRadius: '5px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{
-                  width: '10px',
-                  height: '10px',
-                  borderRadius: '50%',
-                  background: isOnline ? '#4CAF50' : '#9E9E9E',
-                  display: 'inline-block'
-                }} />
-                <span><strong>{f.friendUsername || "Laddar..."}</strong></span>
-              </div>
 
-              {unreadCount > 0 && (
-                <span style={{ 
-                  background: '#e91e63', 
-                  color: '#fff', 
-                  borderRadius: '50%', 
-                  padding: '2px 8px', 
-                  fontSize: '12px',
-                  fontWeight: 'bold'
-                }}>
-                  {unreadCount}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </aside>
-  );
+
+
+return (
+
+<>
+
+<aside
+className={
+`sidebar ${isSidebarOpen ? "sidebar-open" : ""}`
+}
+>
+
+
+<div className="sidebar-search">
+
+<input
+
+placeholder="Sök användarnamn..."
+
+value={searchName}
+
+onChange={
+e=>setSearchName(e.target.value)
+}
+
+/>
+
+
+<button onClick={handleSearch}>
+Sök
+</button>
+
+
+</div>
+
+
+
+{
+foundUser &&
+
+<div>
+
+<p>
+Hittad:
+<strong>
+{foundUser.username}
+</strong>
+</p>
+
+
+<button onClick={sendRequest}>
+Lägg till vän
+</button>
+
+
+</div>
+
+}
+
+
+
+
+<h3>Dina relationer</h3>
+
+
+{
+friendships.map(f=>{
+
+
+const isSender =
+f.requestedBy===currentUserId;
+
+
+const unread =
+(f.messages?.length || 0)
+-
+(f.lastRead?.[currentUserId] || 0);
+
+
+
+if(f.status==="pending"){
+
+
+return (
+
+<div key={f.id}>
+
+
+<p>
+
+Förfrågan från:
+
+<strong>
+{f.friendUsername || "Laddar"}
+</strong>
+
+</p>
+
+
+{
+!isSender &&
+<button onClick={()=>acceptRequest(f.id)}>
+Acceptera
+</button>
+}
+
+
+</div>
+
+);
+
+}
+
+
+
+
+
+return (
+
+<div
+
+key={f.id}
+
+className="sidebar-friend-card"
+
+onClick={()=>handleChatSelect(f)}
+
+>
+
+
+<span>
+
+{f.friendStatus==="online"
+?"🟢"
+:"⚪"
+}
+
+{" "}
+
+<strong>
+{f.friendUsername || "Laddar"}
+</strong>
+
+</span>
+
+
+
+{
+unread>0 &&
+
+<span className="unread-badge">
+
+{unread}
+
+</span>
+
+}
+
+
+
+</div>
+
+)
+
+
+})
+
+}
+
+
+
+</aside>
+
+
+
+{
+isSidebarOpen &&
+
+<div className="sidebar-overlay"></div>
+
+}
+
+
+</>
+
+);
+
 }

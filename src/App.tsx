@@ -17,25 +17,24 @@ interface UserProfile {
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null); // Håller koll på Firestore-datan (användarnamnet)
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  
+  // Styr om din befintliga sidebar ska glida fram eller inte på mobilen
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // Lyssnar på om användaren loggar in eller ut
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       
       if (currentUser) {
         const docRef = doc(db, "users", currentUser.uid);
         
-        // 1. Sätt din status till online i Firestore direkt vid inloggning
-        await updateDoc(docRef, { status: "online" }).catch(() => {
-          // Fallback om dokumentet saknar statusfältet helt från start
-        });
+        // Sätt status till online direkt vid inloggning
+        await updateDoc(docRef, { status: "online" }).catch(() => {});
         
-        // 2. Hämta din användarprofil för att visa ditt användarnamn i headern
+        // Hämta profil för att visa användarnamn i headern
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setProfile(docSnap.data() as UserProfile);
@@ -51,7 +50,6 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Snygg utloggningsfunktion som sätter status till offline FÖRST
   const handleLogout = async () => {
     if (user) {
       const docRef = doc(db, "users", user.uid);
@@ -66,30 +64,43 @@ function App() {
   return (
     <div className="app-container">
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', background: '#111b21', color: '#fff' }}>
-  
-  {/* MOBILKNAPP: Visas bara på mobilen för att toggla sidebaren */}
-  <button 
-    className="menu-toggle-btn"
-    onClick={() => setSidebarOpen(!isSidebarOpen)} // Eller hur du väljer att styra ditt state
-  >
-    ☰ Kontakter
-  </button>
+        
+        {/* MOBILKNAPP: Togglar statet direkt */}
+        <button 
+          className="menu-toggle-btn"
+          onClick={() => setSidebarOpen(!isSidebarOpen)}
+        >
+          {isSidebarOpen ? '✕ Stäng' : '☰ Kontakter'}
+        </button>
 
-  <h2 className="header-title" style={{ margin: '0 auto 0 0' }}>Yoo Chat</h2>
-  
-  {/* HÄR VISAS VEM MAN ÄR INLOGGAD SOM BREVID UT-KNAPPEN */}
-  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-    <span className="user-info-text" style={{ fontSize: '14px', color: '#ccc' }}>
-      Inloggad som: <strong style={{ color: '#fff' }}>{profile ? profile.username : 'Laddar...'}</strong>
-    </span>
-    <button className="logout-button" onClick={handleLogout}>
-      Logga ut
-    </button>
-  </div>
-</header>
+        <h2 className="header-title" style={{ margin: '0 auto 0 15px' }}>Yoo Chat</h2>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <span className="user-info-text" style={{ fontSize: '14px', color: '#ccc' }}>
+            Inloggad som: <strong style={{ color: '#fff' }}>{profile ? profile.username : 'Laddar...'}</strong>
+          </span>
+          <button className="logout-button" onClick={handleLogout}>
+            Logga ut
+          </button>
+        </div>
+      </header>
       
       <main className="main-content">
-        <Sidebar currentUserId={user.uid} onSelectChat={setActiveChatId} />
+        {/* Vi skickar med isSidebarOpen direkt som en prop till din existerande sidebar */}
+        <Sidebar 
+          currentUserId={user.uid} 
+          onSelectChat={(id) => {
+            setActiveChatId(id);
+            setSidebarOpen(false); // Stänger menyn automatiskt när man väljer en kontakt på mobilen
+          }} 
+          isSidebarOpen={isSidebarOpen}
+        />
+
+        {/* Mörkläggnings-overlay bakom sidebaren på mobilen */}
+        {isSidebarOpen && (
+          <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+        )}
+
         <ChatArea currentUserId={user.uid} activeChatId={activeChatId} />
       </main>
       

@@ -10,7 +10,7 @@ html, body, #root {
   background-color: #f0f2f5;
   color: #111b21;
   -webkit-font-smoothing: antialiased;
-  overflow: hidden; 
+  overflow: hidden; /* Hindrar fula dubbla scrollbars på hela sidan */
 }
 
 .app-container {
@@ -26,7 +26,7 @@ html, body, #root {
 header {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Ändrat till mellanrum så du kan ha en menyknapp till vänster */
+  justify-content: center;
   background-color: #111b21;
   padding: 14px 24px;
   color: #e9edef;
@@ -37,7 +37,7 @@ header {
 }
 .header-title {
   margin: auto;
-  font-size: 32px;
+  font-size: 32px; /* Sänkt något från 40px för att inte krascha på små skärmar */
   text-align: center;
   color: #00a884; 
 }
@@ -52,14 +52,14 @@ footer {
 }
 
 /* ==========================================================================
-   3. LAYOUT & SIDEBAR (Desktop-standard)
+   3. LAYOUT & SIDEBAR
    ========================================================================== */
 .main-content {
   flex: 1;
   display: flex;
   overflow: hidden;
   padding: 0;
-  position: relative; 
+  position: relative; /* VIKTIGT för mobil-positioneringen */
 }
 
 .sidebar {
@@ -71,8 +71,6 @@ footer {
   flex-direction: column;
   padding: 16px;
   box-sizing: border-box;
-  z-index: 5;
-  transition: transform 0.3s ease; /* Gör animationen mjuk när den glider fram */
 }
 
 /* Sökfältet i Sidebar */
@@ -89,6 +87,14 @@ footer {
   border: 1px solid transparent;
   border-radius: 8px;
   font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.sidebar-search input:focus {
+  outline: none;
+  background-color: #ffffff;
+  border-color: #00a884; 
+  box-shadow: 0 0 0 2px rgba(0, 168, 132, 0.2);
 }
 
 /* ==========================================================================
@@ -102,6 +108,7 @@ footer {
   position: relative;
 }
 
+/* Meddelande-containern */
 .chat-messages {
   flex: 1;
   padding: 24px;
@@ -111,19 +118,56 @@ footer {
   gap: 8px;
 }
 
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-messages::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
 /* ==========================================================================
-   5. MEDDELANDEBUBBLOR & INPUT
+   5. MEDDELANDEBUBBLOR
    ========================================================================== */
 .message-bubble {
   max-width: 65%;
   padding: 8px 14px;
   font-size: 14.5px;
   line-height: 1.4;
+  position: relative;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
-.message-bubble.me { align-self: flex-end; background-color: #d9fdd3; border-radius: 12px 12px 0px 12px; }
-.message-bubble.friend { align-self: flex-start; background-color: #ffffff; border-radius: 12px 12px 12px 0px; }
 
+.message-bubble.me {
+  align-self: flex-end;
+  background-color: #d9fdd3; 
+  color: #111b21;
+  border-radius: 12px 12px 0px 12px;
+}
+
+.message-bubble.friend {
+  align-self: flex-start;
+  background-color: #ffffff; 
+  color: #111b21;
+  border-radius: 12px 12px 12px 0px;
+}
+
+.message-text {
+  margin: 0;
+  word-break: break-word; 
+}
+
+.message-time {
+  font-size: 10px;
+  color: #667781;
+  align-self: flex-end;
+  margin-top: 4px;
+  user-select: none; 
+}
+
+/* ==========================================================================
+   6. INPUT-FÄLTET I CHATTEN
+   ========================================================================== */
 .chat-input-container {
   padding: 12px 24px;
   background-color: #f0f2f5; 
@@ -132,94 +176,262 @@ footer {
   align-items: center;
   gap: 12px;
 }
-.chat-input-container input { flex: 1; padding: 12px 16px; background-color: #ffffff; border: 1px solid #e3e7ea; border-radius: 8px; }
+
+.chat-input-container input {
+  flex: 1;
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border: 1px solid #e3e7ea;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: border-color 0.2s ease;
+}
 
 /* ==========================================================================
-   6. AUTH SIDA & LOGOUT
+   7. AUTH SIDA & LOGOUT
    ========================================================================== */
-.auth-wrapper { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f2f5; padding: 20px; box-sizing: border-box; }
-.auth-card { background-color: #ffffff; padding: 40px; width: 100%; max-width: 400px; border-radius: 16px; text-align: center; }
-.logout-button { background-color: black !important; color: white !important; border: none !important; padding: 6px 12px !important; border-radius: 4px !important; cursor: pointer !important; font-weight: bold !important; }
+.auth-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f2f5; 
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.auth-card {
+  background-color: #ffffff;
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.auth-logo { font-size: 32px; font-weight: 800; color: #111b21; margin: 0 0 8px 0; }
+.auth-subtitle { font-size: 15px; color: #667781; margin: 0 0 28px 0; }
+
+.auth-form { display: flex; flex-direction: column; gap: 16px; }
+.auth-input { width: 100%; padding: 12px 16px; border: 1px solid #e3e7ea; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
+
+.auth-submit-btn { width: 100%; padding: 14px; background-color: #111b21; color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+.auth-switch-btn { background: none; border: none; color: #00a884; font-size: 14px; cursor: pointer; margin-top: 24px; }
+
+.logout-button {
+  background-color: black !important;
+  color: white !important; 
+  border: none !important;
+  padding: 6px 12px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  font-weight: bold !important; 
+}
+.logout-button:hover { background-color: #7e0000 !important; }
 
 /* ==========================================================================
-   7. MOBILANPASSNING (Glidande Sidebar / Drawer-meny)
+   8. STRIKT MOBILANPASSNING (Skärmar under 768px)
    ========================================================================== */
 @media (max-width: 768px) {
-
-  /* Chatten tar upp hela skärmen på mobilen i grunden */
-  .chat-area {
-    width: 100%;
-    flex: 1;
-  }
-
-  /* Sidebaren gömmer sig nu precis utanför skärmens vänstra kant */
+  
+  /* 1. Gör att sidebaren tar upp PRECIS hela skärmen */
   .sidebar {
+    width: 100% !important;
+    min-width: 100% !important;
+    border-right: none;
     position: absolute;
     top: 0;
     left: 0;
     height: 100%;
-    width: 280px; /* Lite smalare på mobil så man ser chatten bakom */
-    min-width: 280px;
-    box-shadow: 5px 0 15px rgba(0,0,0,0.25);
-    transform: translateX(-100%); /* Helt gömd till vänster */
-    z-index: 99; /* Ligger ovanpå allt i chatten */
+    z-index: 1;
   }
 
-  /* NÄR DU ÖPPNAR MENYN: 
-     När klassen 'sidebar-open' läggs på .main-content så glider den in! 
-  */
-  .main-content.sidebar-open .sidebar {
-    transform: translateX(0); /* Glider in på skärmen */
-  }
-
-  /* Valfritt: En mörk skugga över chatten när sidebaren är öppen */
-  .main-content.sidebar-open .chat-area::after {
-    content: '';
+  /* 2. Gör att chatten OCKSÅ tar upp hela skärmen och lägger sig djupt under tills den behövs */
+  .chat-area {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.4);
-    z-index: 90; /* Precis under sidebaren, men över meddelandena */
-    pointer-events: auto;
+    z-index: 2;
+    display: none; /* Dold som standard på mobilen */
   }
 
-  /* Mindre justeringar för mobilskärmar */
+  /* 3. NÄR EN CHATT ÄR VIKTIG/AKTIV: 
+     Om du lägger till klassen 'chat-active' på din .main-content (via JavaScript/React),
+     så tvingar vi fram chatten över hela skärmen.
+  */
+  .main-content.chat-active .chat-area {
+    display: flex !important;
+  }
+
+  /* Justeringar för att spara plats på mobilskärmar */
+  .header-title { font-size: 24px; }
   .message-bubble { max-width: 85%; }
   .chat-messages { padding: 12px; }
   .chat-input-container { padding: 10px; gap: 8px; }
+  .auth-card { padding: 24px 16px; }
+  footer { padding: 8px; font-size: 11px; }
 }
+/* =========================
+   SIDEBAR FIX OVERRIDE (HÖGST PRIORITET)
+   ========================= */
 
-.menu-toggle-btn {
-  display: none;
-}
-
-/* Regler för mobiler */
 @media (max-width: 768px) {
+
+  /* tvingar bort gamla mobilregler som stör */
+  .sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+
+    width: 340px !important;
+    min-width: 340px !important;
+    height: 100%;
+
+    background-color: #ffffff;
+    border-right: 1px solid #e3e7ea;
+
+    z-index: 999;
+
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+
+  /* öppet läge (din React: sidebar-open) */
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  /* overlay */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    background: rgba(0,0,0,0.4);
+    z-index: 998;
+  }
+}
+
+  /* =========================
+     CHAT LOGIK (BEHÅLLER DIN IDÉ)
+  ========================= */
+
+  .chat-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    z-index: 2;
+    display: none; /* din gamla logik behålls */
+  }
+
+  .main-content.chat-active .chat-area {
+    display: flex !important;
+  }
+
+  /* =========================
+     UI FIX (ingen designändring)
+  ========================= */
+
+  .header-title {
+    font-size: 24px;
+  }
+
+  .message-bubble {
+    max-width: 85%;
+  }
+
+  .chat-messages {
+    padding: 12px;
+  }
+
+  .chat-input-container {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .auth-card {
+    padding: 24px 16px;
+  }
+
+  footer {
+    padding: 8px;
+    font-size: 11px;
+  }
+
+  @media (max-width: 768px) {
+
+  /* =========================
+     MOBIL SIDEBAR (DRAWER)
+  ========================= */
+
+  .sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+
+    width: 340px !important;
+    min-width: 340px !important;
+    height: 100%;
+
+    background-color: #ffffff;
+    border-right: 1px solid #e3e7ea;
+
+    z-index: 999;
+
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  /* overlay */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    background: rgba(0,0,0,0.4);
+    z-index: 998;
+  }
+
+  /* =========================
+     KONTROLL KNAPP (MOBIL)
+  ========================= */
   .menu-toggle-btn {
-    display: block;
-    background: #00a884;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-right: 10px;
-    font-size: 14px;
+    display: block !important;
   }
+}
 
-  .menu-toggle-btn:active {
-    background-color: #008064;
-  }
-
-  /* Gömmer texten "Inloggad som:" på mobilen och visar bara namnet för att spara plats */
-  .user-info-text {
-    font-size: 12px !important;
-  }
-  .user-info-text strong {
-    display: block; /* Lägger namnet på en ny rad om det blir för trångt */
-    text-align: right;
+/* =========================
+   DÖLJ KONTROLLER PÅ DESKTOP
+========================= */
+@media (min-width: 769px) {
+  .menu-toggle-btn {
+    display: none !important;
   }
 }
