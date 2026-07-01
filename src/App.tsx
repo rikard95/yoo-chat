@@ -64,28 +64,35 @@ function App() {
 
   return (
     <div className="app-container">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', background: '#333', color: '#fff' }}>
-        <h2>Yoo Chat</h2>
-        
-        {/* HÄR VISAS VEM MAN ÄR INLOGGAD SOM BREVID UT-KNAPPEN */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <span style={{ fontSize: '14px', color: '#ccc' }}>
-            Inloggad som: <strong style={{ color: '#fff' }}>{profile ? profile.username : 'Laddar...'}</strong>
-          </span>
-          <button className="logout-button"
-            onClick={handleLogout} 
-          >
-            Logga ut
-          </button>
-        </div>
-      </header>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', background: '#111b21', color: '#fff' }}>
+  
+  {/* MOBILKNAPP: Visas bara på mobilen för att toggla sidebaren */}
+  <button 
+    className="menu-toggle-btn"
+    onClick={() => setSidebarOpen(!isSidebarOpen)} // Eller hur du väljer att styra ditt state
+  >
+    ☰ Kontakter
+  </button>
+
+  <h2 className="header-title" style={{ margin: '0 auto 0 0' }}>Yoo Chat</h2>
+  
+  {/* HÄR VISAS VEM MAN ÄR INLOGGAD SOM BREVID UT-KNAPPEN */}
+  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+    <span className="user-info-text" style={{ fontSize: '14px', color: '#ccc' }}>
+      Inloggad som: <strong style={{ color: '#fff' }}>{profile ? profile.username : 'Laddar...'}</strong>
+    </span>
+    <button className="logout-button" onClick={handleLogout}>
+      Logga ut
+    </button>
+  </div>
+</header>
       
       <main className="main-content">
         <Sidebar currentUserId={user.uid} onSelectChat={setActiveChatId} />
         <ChatArea currentUserId={user.uid} activeChatId={activeChatId} />
       </main>
       
-      <footer style={{ textAlign: 'center', padding: '10px', background: '#eee' }}>© 2026 Yoo Inc.</footer>
+      <footer style={{ textAlign: 'center', padding: '10px', color: '#fff', background: '#000000' }}>© 2026 Yoo Inc.</footer>
     </div>
   );
 }
