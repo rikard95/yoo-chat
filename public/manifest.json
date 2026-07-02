@@ -8,32 +8,20 @@
   "short_name": "y00-chat.web",
   "start_url": "/",
   "theme_color": "#ffffff",
+  "id": "260301",
+  "description": "chat application",
   "icons": [
     {
-      "src": "https://y00-chat.web.app/favicon.svg",
-      "type": "image/svg+xml",
-      "isSquare": false,
-      "isPng": false,
-      "isWebp": false,
-      "isJpg": false,
-      "width": 0,
-      "is512x512": false,
-      "is256x256": false,
-      "is192x192": false
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "https://y00-chat.web.app/favicon.ico",
-      "type": "image/x-icon",
-      "isSquare": false,
-      "isPng": false,
-      "isWebp": false,
-      "isJpg": false,
-      "width": 0,
-      "is512x512": false,
-      "is256x256": false,
-      "is192x192": false
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
-  ],
-  "id": "260301",
-  "description": "chat application"
+  ]
 }
