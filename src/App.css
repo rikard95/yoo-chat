@@ -406,14 +406,15 @@ footer {
 }
 
 .theme-toggle-btn {
-  position: fixed;
-  left: 16px;
-  bottom: 16px;
-  z-index: 1200;
   padding: 10px 14px;
   background: var(--surface);
   color: var(--page-text);
   box-shadow: 0 10px 24px var(--shadow);
+}
+
+.sidebar-theme-toggle {
+  margin-top: auto;
+  width: 40%;
 }
 
 .theme-toggle-btn:hover {
@@ -508,10 +509,6 @@ footer {
 .chat-status-panel-blocked {
   background: color-mix(in srgb, #fff3cd 55%, var(--surface));
   color: #a07000;
-}
-
-.theme-toggle-fab {
-  border-radius: 999px;
 }
 
 html[data-theme='dark'] .app-container,

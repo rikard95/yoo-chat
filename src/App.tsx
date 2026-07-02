@@ -23,17 +23,6 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('yoo-theme') === 'dark';
   });
-
-  const themeToggleButton = (
-    <button
-      className="theme-toggle-btn theme-toggle-fab"
-      onClick={() => setIsDarkMode(prev => !prev)}
-      type="button"
-      aria-label={isDarkMode ? 'change to light mode' : 'change to dark mode'}
-    >
-      {isDarkMode ? '☀️ Light' : '🌙 Dark'}
-    </button>
-  );
   
   // Styr om din befintliga sidebar ska glida fram eller inte på mobilen
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -79,7 +68,7 @@ function App() {
   };
 
   if (loading) return <div style={{ padding: '20px' }}>Loading Yoo...</div>;
-  if (!user) return <>{themeToggleButton}<Auth /></>;
+  if (!user) return <Auth />;
 
   return (
     <div className="app-container" data-theme={isDarkMode ? 'dark' : 'light'}>
@@ -105,11 +94,11 @@ function App() {
         </div>
       </header>
 
-      {themeToggleButton}
-      
       <main className={`main-content ${isSidebarOpen ? 'sidebar-open' : ''} ${activeChatId ? 'chat-active' : ''}`}>
         <Sidebar 
           currentUserId={user.uid} 
+          isDarkMode={isDarkMode}
+          onToggleTheme={() => setIsDarkMode(prev => !prev)}
           onSelectChat={(id) => {
             setActiveChatId(id);
             setSidebarOpen(false);

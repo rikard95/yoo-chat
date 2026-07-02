@@ -18,6 +18,8 @@ interface SidebarProps {
   onContactDeleted: (id: string) => void;
   activeChatId: string | null;
   isSidebarOpen: boolean;
+  isDarkMode: boolean;
+  onToggleTheme: () => void;
 }
 
 interface UserProfile {
@@ -45,10 +47,13 @@ export default function Sidebar({
   onSelectChat,
   onContactDeleted,
   activeChatId,
-  isSidebarOpen
+  isSidebarOpen,
+  isDarkMode,
+  onToggleTheme
 }: SidebarProps) {
 
   const [searchName,setSearchName] = useState('');
+
   const [foundUser,setFoundUser] = useState<UserProfile|null>(null);
   const [friendships,setFriendships] = useState<Friendship[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -509,7 +514,17 @@ aria-label="Open contact menu"
 
 
 
+<button
+  className="theme-toggle-btn sidebar-theme-toggle"
+  onClick={onToggleTheme}
+  type="button"
+  aria-label={isDarkMode ? 'change to light mode' : 'change to dark mode'}
+>
+  {isDarkMode ? '☀️Light ' : '🌙 Dark'}
+</button>
+
 </aside>
+
 
 
 
