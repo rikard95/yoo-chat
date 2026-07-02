@@ -8,12 +8,14 @@ import {
   addDoc,
   onSnapshot,
   doc,
-  updateDoc
+  updateDoc,
+  deleteDoc
 } from 'firebase/firestore';
 
 interface SidebarProps {
   currentUserId: string;
   onSelectChat: (id: string) => void;
+  onContactDeleted: (id: string) => void;
   activeChatId: string | null;
   isSidebarOpen: boolean;
 }
@@ -28,18 +30,20 @@ interface UserProfile {
 interface Friendship {
   id: string;
   userIds: string[];
-  status: 'pending' | 'accepted';
+  status: 'pending' | 'accepted' | 'blocked';
   requestedBy: string;
   messages?: { senderId: string; text: string; createdAt?: number }[];
   lastRead?: Record<string, number>;
   friendUsername?: string;
   friendStatus?: 'online' | 'offline';
+  blockedBy?: string;
 }
 
 
 export default function Sidebar({
   currentUserId,
   onSelectChat,
+  onContactDeleted,
   activeChatId,
   isSidebarOpen
 }: SidebarProps) {
@@ -47,6 +51,8 @@ export default function Sidebar({
   const [searchName,setSearchName] = useState('');
   const [foundUser,setFoundUser] = useState<UserProfile|null>(null);
   const [friendships,setFriendships] = useState<Friendship[]>([]);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [isSendingRequest, setIsSendingRequest] = useState(false);
 
 
   const handleSearch = async () => {
@@ -65,13 +71,13 @@ export default function Sidebar({
       const data = snap.docs[0].data() as UserProfile;
 
       if(data.uid === currentUserId){
-        return alert("Du kan inte lägga till dig själv!");
+        return alert("You can’t add yourself!");
       }
 
       setFoundUser(data);
 
     }else{
-      alert("Hittade ingen användare");
+      alert("No user found");
     }
   };
 
@@ -80,40 +86,55 @@ export default function Sidebar({
   const sendRequest = async()=>{
 
     if(!foundUser)return;
+    if (isSendingRequest) return;
 
+    setIsSendingRequest(true);
 
-    await addDoc(collection(db,"friendships"),{
+    try {
+      const existing = friendships.find(friendship =>
+        friendship.userIds.includes(foundUser.uid)
+      );
 
-      userIds:[
-        currentUserId,
-        foundUser.uid
-      ],
-
-      status:"pending",
-
-      requestedBy:currentUserId,
-
-      messages:[],
-
-      lastRead:{
-        [currentUserId]:0,
-        [foundUser.uid]:0
+      if (existing) {
+        const existingStatus = existing.status;
+        alert(
+          existingStatus === 'blocked'
+            ? 'You are already blocked or already connected.'
+            : 'This person is already in your contacts or has a pending request.'
+        );
+        return;
       }
 
-    });
+      await addDoc(collection(db,"friendships"),{
+        userIds:[
+          currentUserId,
+          foundUser.uid
+        ],
+        status:"pending",
+        requestedBy:currentUserId,
+        messages:[],
+        lastRead:{
+          [currentUserId]:0,
+          [foundUser.uid]:0
+        }
+      });
 
+      setFoundUser(null);
+      setSearchName('');
 
-    setFoundUser(null);
-    setSearchName('');
-
-    alert("Vänförfrågan skickad");
+      alert("Friend request sent");
+    } catch (error) {
+      console.error('Failed to add friend:', error);
+      alert('Could not send the friend request. Please try again.');
+    } finally {
+      setIsSendingRequest(false);
+    }
 
   };
 
 
 
   const acceptRequest = async(id:string)=>{
-
     await updateDoc(
       doc(db,"friendships",id),
       {
@@ -121,6 +142,32 @@ export default function Sidebar({
       }
     );
 
+  };
+
+
+  const removeContact = async (f: Friendship) => {
+    await deleteDoc(doc(db, 'friendships', f.id));
+    onContactDeleted(f.id);
+    setOpenMenuId(null);
+  };
+
+  const toggleBlockContact = async (f: Friendship) => {
+    const isBlockedByMe = f.status === 'blocked' && f.blockedBy === currentUserId;
+
+    await updateDoc(
+      doc(db, 'friendships', f.id),
+      isBlockedByMe
+        ? {
+            status: 'accepted',
+            blockedBy: null
+          }
+        : {
+            status: 'blocked',
+            blockedBy: currentUserId
+          }
+    );
+
+    setOpenMenuId(null);
   };
 
 
@@ -255,11 +302,11 @@ className={
 >
 
 
-<div className="sidebar-search">
+  <div className="sidebar-search">
 
 <input
 
-placeholder="Sök användarnamn..."
+ placeholder="Search username..."
 
 value={searchName}
 
@@ -270,8 +317,8 @@ e=>setSearchName(e.target.value)
 />
 
 
-<button onClick={handleSearch}>
-Sök
+  <button className="sidebar-action-button sidebar-action-button-secondary" onClick={handleSearch}>
+  Search
 </button>
 
 
@@ -285,15 +332,15 @@ foundUser &&
 <div>
 
 <p>
-Hittad:
+Found:
 <strong>
 {foundUser.username}
 </strong>
 </p>
 
 
-<button onClick={sendRequest}>
-Lägg till vän
+<button className="sidebar-action-button" onClick={sendRequest} disabled={isSendingRequest}>
+Add friend
 </button>
 
 
@@ -304,7 +351,7 @@ Lägg till vän
 
 
 
-<h3>Dina relationer</h3>
+<h3>Your contacts</h3>
 
 
 {
@@ -322,6 +369,7 @@ Math.max(
 );
 
 const isActiveChat = activeChatId === f.id;
+const isBlockedByMe = f.status === 'blocked' && f.blockedBy === currentUserId;
 
 
 
@@ -335,10 +383,10 @@ return (
 
 <p>
 
-Förfrågan från:
+Request from:
 
 <strong>
-{f.friendUsername || "Laddar"}
+{f.friendUsername || "Loading"}
 </strong>
 
 </p>
@@ -346,8 +394,8 @@ Förfrågan från:
 
 {
 !isSender &&
-<button onClick={()=>acceptRequest(f.id)}>
-Acceptera
+<button className="sidebar-action-button sidebar-action-button-secondary" onClick={()=>acceptRequest(f.id)}>
+Accept
 </button>
 }
 
@@ -371,6 +419,8 @@ key={f.id}
 className="sidebar-friend-card"
 
 onClick={()=>handleChatSelect(f)}
+role="button"
+tabIndex={0}
 
 >
 
@@ -388,8 +438,12 @@ onClick={()=>handleChatSelect(f)}
 <span className="sidebar-friend-info">
 
 <strong>
-{f.friendUsername || "Laddar"}
+{f.friendUsername || "Loading"}
 </strong>
+
+{f.status === 'blocked' && (
+  <span className="blocked-label">Blocked</span>
+)}
 
 </span>
 
@@ -398,13 +452,49 @@ onClick={()=>handleChatSelect(f)}
 {
 !isActiveChat && unread>0 &&
 
-<span className="unread-badge" title={`${unread} olästa meddelanden`}>
+<span className="unread-badge" title={`${unread} unread messages`}>
 
 {unread}
 
 </span>
 
 }
+
+
+<button
+type="button"
+className="contact-menu-trigger"
+onClick={(e) => {
+  e.stopPropagation();
+  setOpenMenuId(openMenuId === f.id ? null : f.id);
+}}
+aria-label="Open contact menu"
+>
+⋯
+</button>
+
+{openMenuId === f.id && (
+  <div
+    className="contact-menu"
+    onClick={(e) => e.stopPropagation()}
+  >
+    <button
+      type="button"
+      className="contact-menu-item"
+      onClick={() => removeContact(f)}
+    >
+      Delete contact
+    </button>
+
+    <button
+      type="button"
+      className="contact-menu-item"
+      onClick={() => toggleBlockContact(f)}
+    >
+      {isBlockedByMe ? 'Unblock' : 'Block'}
+    </button>
+  </div>
+)}
 
 
 

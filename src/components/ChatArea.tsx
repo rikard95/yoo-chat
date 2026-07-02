@@ -11,17 +11,24 @@ interface ChatAreaProps {
 // 1. Define the internal message schema
 interface Message {
   senderId: string;
-  text: string;
+  text?: string;
   timestamp: string;
+  attachment?: {
+    url: string;
+    name: string;
+    mimeType: string;
+    kind: 'image' | 'audio' | 'file';
+  };
 }
 
 // 2. Define the structural schema for your Friendship document
 interface FriendshipDoc {
   id: string;
-  status: 'pending' | 'accepted';
+  status: 'pending' | 'accepted' | 'blocked';
   messages?: Message[];
   users?: string[];
   lastRead?: Record<string, number>; // Lagt till för att hantera olästa meddelanden
+  blockedBy?: string | null;
 }
 
 export default function ChatArea({ currentUserId, activeChatId }: ChatAreaProps) {
@@ -64,12 +71,11 @@ export default function ChatArea({ currentUserId, activeChatId }: ChatAreaProps)
 
     const chatRef = doc(db, "friendships", activeChatId);
     const newTotalMessages = (friendship.messages || []).length + 1;
-    
-    // Vi lägger till meddelandet och sätter samtidigt ditt eget lastRead till det nya maxantalet
+
     await updateDoc(chatRef, {
       messages: arrayUnion({
         senderId: currentUserId,
-        text: text,
+        text: text.trim(),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }),
       [`lastRead.${currentUserId}`]: newTotalMessages
@@ -78,14 +84,26 @@ export default function ChatArea({ currentUserId, activeChatId }: ChatAreaProps)
     setText('');
   };
 
-  if (!activeChatId) return <div style={{ flex: 1, padding: '20px' }}>Välj en godkänd vän i menyn för att börja chatta.</div>;
-  if (!friendship) return <div style={{ flex: 1, padding: '20px' }}>Laddar chatt...</div>;
+  if (!activeChatId) return <div style={{ flex: 1, padding: '20px' }}>Select an approved friend in the menu to start chatting.</div>;
+  if (!friendship) return <div style={{ flex: 1, padding: '20px' }}>Loading chat...</div>;
 
   // SPÄRREN: Om någon på något sätt öppnar en chatt som är 'pending'
   if (friendship.status === 'pending') {
     return (
-      <div style={{ flex: 1, padding: '20px', background: '#ffcccc', color: 'red' }}>
-        🛑 Du kan inte skicka meddelanden förrän den andre har accepterat din förfrågan.
+      <div className="chat-status-panel chat-status-panel-pending">
+        🛑 You can’t send messages until the other person accepts your request.
+      </div>
+    );
+  }
+
+  if (friendship.status === 'blocked') {
+    const blockedByMe = friendship.blockedBy === currentUserId;
+
+    return (
+      <div className="chat-status-panel chat-status-panel-blocked">
+        {blockedByMe
+          ? 'You have blocked this contact.'
+          : 'This contact has blocked you.'}
       </div>
     );
   }
@@ -93,24 +111,39 @@ export default function ChatArea({ currentUserId, activeChatId }: ChatAreaProps)
   const messages = friendship.messages || [];
 
   return (
-    <section className="chat-area" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: '#fff', overflow: 'hidden' }}>
-      <div className="chat-messages" style={{ flex: 1, minHeight: 0, padding: '20px', overflowY: 'auto', background: '#efeae2' }}>
+    <section className="chat-area">
+      <div className="chat-messages">
         {messages.map((m: Message, index: number) => {
           const isMe = m.senderId === currentUserId;
+          const hasText = Boolean(m.text && m.text.trim());
+          const attachment = m.attachment;
           return (
-            <div key={index} style={{ 
-              textAlign: isMe ? 'right' : 'left', 
-              margin: '10px 0' 
-            }}>
-              <span style={{ 
-                background: isMe ? '#d9fdd3' : '#fff', 
-                padding: '8px 12px', 
-                borderRadius: '10px',
-                display: 'inline-block',
-                boxShadow: '0 1px 1px rgba(0,0,0,0.1)'
-              }}>
-                {m.text}
-                <div style={{ fontSize: '9px', color: '#888', marginTop: '3px' }}>{m.timestamp}</div>
+            <div key={index} className={`message-row ${isMe ? 'message-row-me' : 'message-row-friend'}`}>
+              <span className={`message-bubble ${isMe ? 'message-bubble-me' : 'message-bubble-friend'}`}>
+                {hasText && <div className="message-text">{m.text}</div>}
+                {attachment && attachment.kind === 'image' && (
+                  <a className="message-attachment-link" href={attachment.url} target="_blank" rel="noreferrer">
+                    <img className="message-image" src={attachment.url} alt={attachment.name} />
+                  </a>
+                )}
+                {attachment && attachment.kind === 'audio' && (
+                  <div className="message-audio-wrap">
+                    <audio controls className="message-audio">
+                      <source src={attachment.url} type={attachment.mimeType} />
+                    </audio>
+                  </div>
+                )}
+                {attachment && attachment.kind === 'file' && (
+                  <a className="message-file-link" href={attachment.url} download={attachment.name}>
+                    {attachment.name}
+                  </a>
+                )}
+                {attachment && (
+                  <a className="message-download-link" href={attachment.url} download={attachment.name}>
+                    Download
+                  </a>
+                )}
+                <div className="message-time">{m.timestamp}</div>
               </span>
             </div>
           );
@@ -118,17 +151,23 @@ export default function ChatArea({ currentUserId, activeChatId }: ChatAreaProps)
         <div ref={messagesEndRef} />
       </div>
 
-      <form className="chat-input-container" onSubmit={sendMessage} style={{ flexShrink: 0, padding: '15px', display: 'flex', gap: '10px', borderTop: '1px solid #ccc', background: '#f0f2f5', paddingBottom: 'calc(15px + env(safe-area-inset-bottom))' }}>
+      <form className="chat-input-container" onSubmit={sendMessage}>
+        { /*
+          Future attachment support:
+          <label className="attachment-button">
+            Add file
+            <input type="file" accept="image/*,audio/*,.mp3,.wav" />
+          </label>
+        */ }
         <input 
           className="chat-input"
           type="text" 
-          placeholder="Skriv ett meddelande..." 
+          placeholder="Write a message..." 
           value={text} 
           onChange={e => setText(e.target.value)} 
           maxLength={500}
-          style={{ flex: 1, minWidth: 0, padding: '10px' }}
         />
-        <button className="send-button" type="submit">Skicka</button>
+        <button className="send-button" type="submit">Send</button>
       </form>
     </section>
   );

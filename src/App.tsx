@@ -20,9 +20,29 @@ function App() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('yoo-theme') === 'dark';
+  });
+
+  const themeToggleButton = (
+    <button
+      className="theme-toggle-btn theme-toggle-fab"
+      onClick={() => setIsDarkMode(prev => !prev)}
+      type="button"
+      aria-label={isDarkMode ? 'change to light mode' : 'change to dark mode'}
+    >
+      {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+    </button>
+  );
   
   // Styr om din befintliga sidebar ska glida fram eller inte på mobilen
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('yoo-theme', isDarkMode ? 'dark' : 'light');
+    document.documentElement.dataset.theme = isDarkMode ? 'dark' : 'light';
+    document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
+  }, [isDarkMode]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -58,11 +78,11 @@ function App() {
     signOut(auth);
   };
 
-  if (loading) return <div style={{ padding: '20px' }}>Laddar Yoo...</div>;
-  if (!user) return <Auth />;
+  if (loading) return <div style={{ padding: '20px' }}>Loading Yoo...</div>;
+  if (!user) return <>{themeToggleButton}<Auth /></>;
 
   return (
-    <div className="app-container">
+    <div className="app-container" data-theme={isDarkMode ? 'dark' : 'light'}>
       <header className="app-header">
         
         {/* MOBILKNAPP: Togglar statet direkt */}
@@ -70,34 +90,39 @@ function App() {
           className="menu-toggle-btn"
           onClick={() => setSidebarOpen(!isSidebarOpen)}
         >
-          {isSidebarOpen ? '✕ Stäng' : '☰ Kontakter'}
+          {isSidebarOpen ? '✕ Close' : '☰ Contacts'}
         </button>
 
         <h2 className="header-title">Yoo Chat</h2>
         
         <div className="header-account">
           <span className="account-chip user-info-text">
-            Inloggad som: <strong>{profile ? profile.username : 'Laddar...'}</strong>
+            Logged in as: <strong>{profile ? profile.username : 'Loading...'}</strong>
           </span>
           <button className="logout-button" onClick={handleLogout}>
-            Logga ut
+            Log out
           </button>
         </div>
       </header>
+
+      {themeToggleButton}
       
       <main className={`main-content ${isSidebarOpen ? 'sidebar-open' : ''} ${activeChatId ? 'chat-active' : ''}`}>
-        {/* Vi skickar med isSidebarOpen direkt som en prop till din existerande sidebar */}
         <Sidebar 
           currentUserId={user.uid} 
           onSelectChat={(id) => {
             setActiveChatId(id);
-            setSidebarOpen(false); // Stänger menyn automatiskt när man väljer en kontakt på mobilen
+            setSidebarOpen(false);
           }} 
+          onContactDeleted={(id) => {
+            if (activeChatId === id) {
+              setActiveChatId(null);
+            }
+          }}
           activeChatId={activeChatId}
           isSidebarOpen={isSidebarOpen}
         />
 
-        {/* Mörkläggnings-overlay bakom sidebaren på mobilen */}
         {isSidebarOpen && (
           <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
         )}

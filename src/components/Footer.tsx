@@ -1,7 +1,7 @@
 export function Footer() {
   return (
     <footer>
-      <h1>Footer</h1>
+      <h1>Yoo Chat</h1>
     </footer>
   )
 }

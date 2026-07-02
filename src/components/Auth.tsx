@@ -1,8 +1,8 @@
 // src/components/Auth.tsx
 import { useState } from 'react';
-import { auth, db } from '../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { auth, db, googleProvider } from '../firebase'; // ✨ Importerat googleProvider
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth'; // ✨ Importerat signInWithPopup
+import { doc, setDoc, getDoc } from 'firebase/firestore'; // ✨ Importerat getDoc för att kolla om användaren finns
 
 export default function Auth() {
   const [isRegister, setIsRegister] = useState(false);
@@ -30,20 +30,58 @@ export default function Auth() {
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        // Renoverar lite fula Firebase-meddelanden om du vill, annars visar vi felet
         setError(err.message);
       } else {
-        setError('Ett oväntat fel inträffade.');
+        setError('An unexpected error occurred.');
+      }
+    }
+  };
+
+  // ✨ Ny funktion för Google-inloggning
+  const handleGoogleSignIn = async () => {
+    setError('');
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // Kolla om användaren redan finns i Firestore-databasen
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      // Om det är en helt ny användare, spara dem i databasen
+      if (!userDocSnap.exists()) {
+        // Skapa ett standardanvändarnamn baserat på Google-namnet eller e-posten
+        const generatedUsername = (user.displayName || user.email?.split('@')[0] || 'user')
+          .toLowerCase()
+          .replace(/\s+/g, ''); // Tar bort eventuella mellanslag
+
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          username: generatedUsername,
+          email: user.email
+        });
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Google sign-in failed.');
       }
     }
   };
 
   return (
     <div className="auth-wrapper">
+      <div className="auth-intro">
+        <h2 className="auth-intro-title">Yoo Chat</h2>
+        <p className="auth-intro-text">
+          A simple, fast chat for staying close with friends through messages, contacts, and clean conversations.
+        </p>
+      </div>
       <div className="auth-card">
         <h1 className="auth-logo">yoo</h1>
         <p className="auth-subtitle">
-          {isRegister ? 'Skapa ett konto för att börja chatta' : 'Logga in på ditt konto'}
+          {isRegister ? 'Create an account to start chatting' : 'Log in to your account'}
         </p>
 
         {error && <div className="auth-error">{error}</div>}
@@ -53,7 +91,7 @@ export default function Auth() {
             <input 
               className="auth-input"
               type="text" 
-              placeholder="Användarnamn" 
+              placeholder="Username" 
               value={username} 
               onChange={(e) => setUsername(e.target.value)} 
               required 
@@ -62,7 +100,7 @@ export default function Auth() {
           <input 
             className="auth-input"
             type="email" 
-            placeholder="E-postadress" 
+            placeholder="Email address" 
             value={email} 
             onChange={(e) => setEmail(e.target.value)} 
             required 
@@ -70,24 +108,35 @@ export default function Auth() {
           <input 
             className="auth-input"
             type="password" 
-            placeholder="Lösenord" 
+            placeholder="Password" 
             value={password} 
             onChange={(e) => setPassword(e.target.value)} 
             required 
           />
           <button type="submit" className="auth-submit-btn">
-            {isRegister ? 'Registrera dig' : 'Logga in'}
+            {isRegister ? 'Sign up' : 'Log in'}
           </button>
         </form>
+
+        {/* ✨ Avskiljare och Google-knapp */}
+        <div className="auth-divider">or</div>
+
+        <button 
+          onClick={handleGoogleSignIn} 
+          className="auth-google-btn"
+          type="button"
+        >
+          Sign in with Google
+        </button>
 
         <button 
           onClick={() => {
             setIsRegister(!isRegister);
-            setError(''); // Nollställ felmeddelandet vid byte av läge
+            setError(''); 
           }} 
           className="auth-switch-btn"
         >
-          {isRegister ? 'Har du redan ett konto? Logga in' : 'Inget konto? Skapa ett här'}
+          {isRegister ? 'Already have an account? Log in' : 'No account yet? Create one here'}
         </button>
       </div>
     </div>
