@@ -178,8 +178,14 @@ export default function Sidebar({
 
 
   const handleChatSelect = async(f:Friendship)=>{
+    const readCount = f.messages?.length || 0;
 
-    onSelectChat(f.id);
+    await updateDoc(
+      doc(db,"friendships",f.id),
+      {
+        [`lastRead.${currentUserId}`]: readCount
+      }
+    );
 
     setFriendships(prev =>
       prev.map(item =>
@@ -188,21 +194,14 @@ export default function Sidebar({
               ...item,
               lastRead: {
                 ...(item.lastRead || {}),
-                [currentUserId]: item.messages?.length || 0
+                [currentUserId]: readCount
               }
             }
           : item
       )
     );
 
-
-    await updateDoc(
-      doc(db,"friendships",f.id),
-      {
-        [`lastRead.${currentUserId}`]:
-        f.messages?.length || 0
-      }
-    );
+    onSelectChat(f.id);
 
   };
 
