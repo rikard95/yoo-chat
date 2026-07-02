@@ -1,11 +1,39 @@
 {
-  "name": "Yoo Chat",
-  "short_name": "YooChat",
-  "start_url": "/",
-  "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "y00-chat.web",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "y00-chat.web",
+  "start_url": "/",
+  "theme_color": "#ffffff",
   "icons": [
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
-  ]
+    {
+      "src": "https://y00-chat.web.app/favicon.svg",
+      "type": "image/svg+xml",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    },
+    {
+      "src": "https://y00-chat.web.app/favicon.ico",
+      "type": "image/x-icon",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ],
+  "id": "260301",
+  "description": "chat application"
 }
