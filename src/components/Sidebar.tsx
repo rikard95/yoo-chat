@@ -140,12 +140,17 @@ export default function Sidebar({
 
 
   const acceptRequest = async(id:string)=>{
-    await updateDoc(
-      doc(db,"friendships",id),
-      {
-        status:"accepted"
-      }
-    );
+    try {
+      await updateDoc(
+        doc(db,"friendships",id),
+        {
+          status:"accepted"
+        }
+      );
+    } catch (error) {
+      console.error('Failed to accept friend request:', error);
+      alert('Could not accept the friend request. Please try again.');
+    }
 
   };
 
