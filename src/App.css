@@ -242,6 +242,16 @@ footer {
   color: var(--header-text);
 }
 
+.user-info-text {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 38%, transparent);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.user-info-text strong {
+  color: var(--primary);
+}
+
 .sidebar-friend-card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
@@ -628,6 +638,16 @@ html[data-theme='dark'] .sidebar-friend-card:hover {
 html[data-theme='dark'] .account-chip {
   background: var(--chip-bg);
   border-color: var(--chip-border);
+}
+
+html[data-theme='dark'] .user-info-text {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  color: #8bf0d2;
+}
+
+html[data-theme='dark'] .user-info-text strong {
+  color: #8bf0d2;
 }
 
 html[data-theme='dark'] .chat-messages {
