@@ -1,7 +1,12 @@
 // src/components/Auth.tsx
 import { useState } from 'react';
 import { auth, db, googleProvider } from '../firebase'; // ✨ Importerat googleProvider
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth'; // ✨ Importerat signInWithPopup
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signInWithRedirect
+} from 'firebase/auth'; // ✨ Importerat signInWithPopup
 import { doc, setDoc, getDoc } from 'firebase/firestore'; // ✨ Importerat getDoc för att kolla om användaren finns
 
 export default function Auth() {
@@ -62,6 +67,27 @@ export default function Auth() {
         });
       }
     } catch (err: unknown) {
+      const errorCode = typeof err === 'object' && err && 'code' in err ? String((err as { code?: string }).code) : '';
+
+      if (errorCode === 'auth/popup-blocked' || errorCode === 'auth/popup-closed-by-user' || errorCode === 'auth/cancelled-popup-request') {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirectErr: unknown) {
+          if (redirectErr instanceof Error) {
+            setError(redirectErr.message);
+          } else {
+            setError('Google sign-in failed.');
+          }
+          return;
+        }
+      }
+
+      if (errorCode === 'auth/unauthorized-domain') {
+        setError('This deployed domain is not authorized for Google sign-in in Firebase. Add the site domain to Authentication > Settings > Authorized domains.');
+        return;
+      }
+
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -126,7 +152,7 @@ export default function Auth() {
           className="auth-google-btn"
           type="button"
         >
-          Sign in with Google
+          Continue with Google
         </button>
 
         <button 
