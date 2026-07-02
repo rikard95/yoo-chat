@@ -145,7 +145,7 @@ export default function Auth() {
         </form>
 
         {/* ✨ Avskiljare och Google-knapp */}
-        <div className="auth-divider">or</div>
+        <div className="auth-divider"></div>
 
         <button 
           onClick={handleGoogleSignIn} 

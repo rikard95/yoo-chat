@@ -854,3 +854,11 @@ html[data-theme='light'] .auth-intro-title,
 html[data-theme='light'] .auth-intro-text {
   color: #000000;
 }
+
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
