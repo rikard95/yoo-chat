@@ -364,11 +364,45 @@ Add friend
 
 
 {
-friendships.map(f=>{
+friendships.some(f => f.status === 'pending') && (
+  <div className="pending-requests-section">
+    <h4>Friend requests</h4>
+
+    {
+      friendships
+        .filter(f => f.status === 'pending')
+        .map(f => {
+          const isSender = f.requestedBy === currentUserId;
+          const requesterLabel = isSender ? 'You' : (f.friendUsername || 'Loading');
+
+          return (
+            <div key={f.id} className="pending-request-card">
+              <p>
+                Request from: <strong>{requesterLabel}</strong>
+              </p>
+
+              {!isSender && (
+                <button className="sidebar-action-button sidebar-action-button-secondary" onClick={() => acceptRequest(f.id)}>
+                  Accept
+                </button>
+              )}
+
+              {isSender && (
+                <span className="pending-request-note">Waiting for acceptance</span>
+              )}
+            </div>
+          );
+        })
+    }
+  </div>
+)
+}
 
 
-const isSender =
-f.requestedBy===currentUserId;
+{
+  friendships
+    .filter(f => f.status !== 'pending')
+    .map(f => {
 
 
 const unread =
@@ -379,44 +413,6 @@ Math.max(
 
 const isActiveChat = activeChatId === f.id;
 const isBlockedByMe = f.status === 'blocked' && f.blockedBy === currentUserId;
-
-
-
-if(f.status==="pending"){
-
-
-return (
-
-<div key={f.id}>
-
-
-<p>
-
-Request from:
-
-<strong>
-{f.friendUsername || "Loading"}
-</strong>
-
-</p>
-
-
-{
-!isSender &&
-<button className="sidebar-action-button sidebar-action-button-secondary" onClick={()=>acceptRequest(f.id)}>
-Accept
-</button>
-}
-
-
-</div>
-
-);
-
-}
-
-
-
 
 
 return (
